@@ -1,104 +1,52 @@
-const apiKey = "";
-const apiCountryURL = "https://countryflagsapi.com/png/";
-const apiUnsplash = "https://source.unsplash.com/1600x900/?";
-
-const cityInput = document.querySelector("#city-input");
-const searchBtn = document.querySelector("#search");
-
-const cityElement = document.querySelector("#city");
-const tempElement = document.querySelector("#temperature span");
-const descElement = document.querySelector("#description");
-const weatherIconElement = document.querySelector("#weather-icon");
-const countryElement = document.querySelector("#country");
-const umidityElement = document.querySelector("#umidity span");
-const windElement = document.querySelector("#wind span");
-
-const weatherContainer = document.querySelector("#weather-data");
-
-const errorMessageContainer = document.querySelector("#error-message");
-const loader = document.querySelector("#loader");
-
-const suggestionContainer = document.querySelector("#suggestions");
-const suggestionButtons = document.querySelectorAll("#suggestions button");
-
-// Loader
-const toggleLoader = () => {
-  loader.classList.toggle("hide");
+let weather = {
+  apiKey: "c001b63e7af7f063a16d3160c0cec6e0 ",
+  fetchWeather: function (city) {
+    fetch(
+      "https://api.openweathermap.org/data/2.5/weather?q=" + city + "&units=metric&appid=" +
+        this.apiKey
+    )
+      .then((response) => {
+        if (!response.ok) {
+          alert("No weather found.");
+          throw new Error("No weather found.");
+        }
+        return response.json();
+      })
+      .then((data) => this.displayWeather(data));
+  },
+  displayWeather: function (data) {
+    const { name } = data;
+    const { icon, description } = data.weather[0];
+    const { temp, humidity } = data.main;
+    const { speed } = data.wind;
+    document.querySelector(".city").innerText = "Weather in " + name;
+    document.querySelector(".icon").src =
+      "https://openweathermap.org/img/wn/" + icon + ".png";
+    document.querySelector(".description").innerText = description;
+    document.querySelector(".temp").innerText = temp + "°C";
+    document.querySelector(".humidity").innerText =
+      "Humidity: " + humidity + "%";
+    document.querySelector(".wind").innerText =
+      "Wind speed: " + speed + " km/h";
+    document.querySelector(".weather").classList.remove("loading");
+    document.body.style.backgroundImage =
+      "url('https://source.unsplash.com/1600x900/?" + name + "')";
+  },
+  search: function () {
+    this.fetchWeather(document.querySelector(".search-bar").value);
+  },
 };
 
-const getWeatherData = async (city) => {
-  toggleLoader();
-
-  const apiWeatherURL = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}&lang=pt_br`;
-
-  const res = await fetch(apiWeatherURL);
-  const data = await res.json();
-
-  toggleLoader();
-
-  return data;
-};
-
-// Tratamento de erro
-const showErrorMessage = () => {
-  errorMessageContainer.classList.remove("hide");
-};
-
-const hideInformation = () => {
-  errorMessageContainer.classList.add("hide");
-  weatherContainer.classList.add("hide");
-
-  suggestionContainer.classList.add("hide");
-};
-
-const showWeatherData = async (city) => {
-  hideInformation();
-
-  const data = await getWeatherData(city);
-
-  if (data.cod === "404") {
-    showErrorMessage();
-    return;
-  }
-
-  cityElement.innerText = data.name;
-  tempElement.innerText = parseInt(data.main.temp);
-  descElement.innerText = data.weather[0].description;
-  weatherIconElement.setAttribute(
-    "src",
-    `http://openweathermap.org/img/wn/${data.weather[0].icon}.png`
-  );
-  countryElement.setAttribute("src", apiCountryURL + data.sys.country);
-  umidityElement.innerText = `${data.main.humidity}%`;
-  windElement.innerText = `${data.wind.speed}km/h`;
-
-  // Change bg image
-  document.body.style.backgroundImage = `url("${apiUnsplash + city}")`;
-
-  weatherContainer.classList.remove("hide");
-};
-
-searchBtn.addEventListener("click", async (e) => {
-  e.preventDefault();
-
-  const city = cityInput.value;
-
-  showWeatherData(city);
+document.querySelector(".search button").addEventListener("click", function () {
+  weather.search();
 });
 
-cityInput.addEventListener("keyup", (e) => {
-  if (e.code === "Enter") {
-    const city = e.target.value;
-
-    showWeatherData(city);
-  }
-});
-
-// Sugestões
-suggestionButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const city = btn.getAttribute("id");
-
-    showWeatherData(city);
+document
+  .querySelector(".search-bar")
+  .addEventListener("keyup", function (event) {
+    if (event.key == "Enter") {
+      weather.search();
+    }
   });
-});
+
+weather.fetchWeather("Denver");
